@@ -1,0 +1,40 @@
+###1.CEL文件转化为表达矩阵并注释基因
+install.packages("BiocManager")
+BiocManager::install("affy")
+library(affy)
+# 读取并处理CEL文件
+cel_files <- list.celfiles(path = "/mnt/raid5/User/bailin/RNA/240909Carotid.plaque/data/GSE43292_RAW", full.names = TRUE)
+affy_data <- ReadAffy(filenames = cel_files)
+eset <- rma(affy_data)
+#如果报错“Error in rma(affy_data) : ERROR; return code from pthread_create() is 22”，运行
+#conda install -c conda-forge openblas=0.3.3
+# 提取表达矩阵并保存
+expr_matrix <- exprs(eset)
+write.csv(expr_matrix, file = "expression_matrix.csv")
+###2.GEOquery下载数据
+library(GEOquery)
+setwd("/mnt/raid5/User/bailin/RNA/240909Carotid.plaque/data/GSE43292")
+gset <- getGEO('GSE43292',destdir = ".",AnnotGPL = T,getGPL = T)
+gset[[1]]
+#读取表达矩阵
+exp<-exprs(gset[[1]])
+#读取临床信息矩阵
+cli<-pData(gset[[1]])
+#读取平台信息
+GPL<-fData(gset[[1]])
+#网络不好容易下载不全，可以手动下载输入annot文件
+GPL <- read.delim("/mnt/raid5/User/bailin/RNA/240909Carotid.plaque/data/GSE43292/GPL6244.txt", header = TRUE, sep = "\t", comment.char = "#")
+colnames(GPL)
+#仅提取两列，第一列芯片探针ID，第三列symbolID
+GPL_set=GPL[,c(1,3)]
+#多个基因名只保留第一个
+GPL_set$Gene.symbol<-data.frame(sapply(GPL_set$Gene.symbol,function(x)unlist(strsplit(x,"///"))[1]),stringsAsFactors=F)[,1]
+exp<-as.data.frame(exp)
+exp$ID<-rownames(exp)
+exp_symbol<-merge(exp,GPL_set,by="ID")
+#删除匹配不上的
+exp_symbol<-na.omit(exp_symbol)
+#有多少重复基因
+table(duplicated(exp_symbol$Gene.symbol))
+#去重同时将矩阵转换成标准的表达矩阵形式,exp为AffyBatch对象时可以直接使用exp_unique<-avereps(exp_symbol[,-c(1,ncol(exp_symbol))],ID=exp_symbol$Gene.symbol)
+library(dplyr)
