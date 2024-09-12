@@ -1,3 +1,4 @@
+conda activate bulk
 ###1.CEL文件转化为表达矩阵并注释基因
 install.packages("BiocManager")
 BiocManager::install("affy")
