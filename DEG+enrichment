@@ -12,5 +12,30 @@ pdf(file = "02.pdf", width = 6, height = 6)
 boxplot(data.frame(normalized_exp))
 dev.off()
 write.csv(normalized_exp,file="/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv")
-#limma差异分析
+###limma差异分析###
+library(limma)
 exp <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
+# 提取样本名的最后一位数字
+sample_names <- colnames(exp)
+last_digit <- as.numeric(sub(".*([0-9])$", "\\1", sample_names))
+# 创建分组向量：奇数为 normal 组，偶数为 case 组
+group <- ifelse(last_digit %% 2 == 1, "normal", "case")
+# 创建设计矩阵
+design <- model.matrix(~0 + factor(group))
+colnames(design) <- c("normal", "case")  # 显式命名组
+print(head(design))
+# 创建对比矩阵
+contrast_matrix <- makeContrasts(
+  case_vs_normal = case - normal,
+  levels = design
+)
+print(contrast_matrix)
+# 拟合线性模型
+fit <- lmFit(exp, design)
+# 应用对比
+fit2 <- contrasts.fit(fit, contrast_matrix)
+# 使用经验贝叶斯方法来计算显著性
+fit2 <- eBayes(fit2)
+result <- topTable(fit2,coef=1,n=Inf,adjust="BH")
+head(result)
+write.csv(result,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs.csv")
