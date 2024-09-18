@@ -38,4 +38,11 @@ fit2 <- contrasts.fit(fit, contrast_matrix)
 fit2 <- eBayes(fit2)
 result <- topTable(fit2,coef=1,n=Inf,adjust="BH")
 head(result)
-write.csv(result,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs.csv")
+write.csv(result,"/mnt/raid5c/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs.csv")
+library(dplyr)
+log2FC_threshold <- 1
+p_value_threshold <- 0.05
+DEG <- result %>%
+  filter(abs(logFC) > log2FC_threshold & P.Value < p_value_threshold)
+dim(DEG)
+write.csv(DEG,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs_filtered.csv")
