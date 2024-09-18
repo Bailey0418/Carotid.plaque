@@ -5,8 +5,12 @@ exp <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/prepro
 pdf(file = "01.pdf", width = 6, height = 6)
 boxplot(data.frame(exp))
 dev.off()
-#一致性不好的话要处理一下
-library(affy)
-normalized_exp <- rma(exp)
-write.csv(exp,file="/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/preprocessing/exp_norm.csv")
-
+#一致性不好的话使用limma标准化处理
+library(limma)
+normalized_exp <- normalizeBetweenArrays(exp, method="quantile")
+pdf(file = "02.pdf", width = 6, height = 6)
+boxplot(data.frame(normalized_exp))
+dev.off()
+write.csv(normalized_exp,file="/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv")
+#limma差异分析
+exp <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
