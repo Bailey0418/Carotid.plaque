@@ -46,4 +46,86 @@ DEG <- result %>%
   filter(abs(logFC) > log2FC_threshold & P.Value < p_value_threshold)
 dim(DEG)
 write.csv(DEG,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs_filtered.csv")
+###差异基因作图###
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+DEG <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs_filtered.csv")
+# 添加表达状态的列
+DEG <- DEG %>%
+  mutate(regulation = case_when(
+    logFC >= 1 & adj.P.Val < 0.05 ~ "up",    
+    logFC <= -1 & adj.P.Val < 0.05 ~ "down", 
+    TRUE ~ "no_change"
+  ))
+pdf(file = "03.pdf", width = 6, height = 6)
+# 绘制火山图并添加基因名标签
+ggplot(DEG, aes(x = logFC, y = -log10(adj.P.Val), color = regulation)) +
+  geom_point(alpha = 0.8, size = 2) +
+  scale_color_manual(values = c("up" = "red", "down" = "blue", "no_change" = "gray")) +
+  theme_minimal() +
+  labs(title = "Volcano Plot", x = "log2 Fold Change", y = "-log10 Adjusted P-Value") +
+  theme(legend.title = element_blank()) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black") +
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "black") +
+  
+  # 添加基因名标签，仅对 up 和 down 的基因进行标注
+  geom_text_repel(
+    data = DEG %>% filter(abs(logFC) > 1 & adj.P.Val < 0.05),  # 仅标注显著的基因
+    aes(label = rownames(DEG)),  # 假设 DEG 中的基因名在行名中
+    size = 3,
+    box.padding = unit(0.35, "lines"),
+    point.padding = unit(0.3, "lines")
+  )
+dev.off()
 ###GO+KEGG enrichment###
+library(clusterProfiler)
+library(org.Hs.eg.db)#将Symbol转换为基因符号Entrez ID
+library(dplyr)
+library(DOSE)
+library(ggplot2)
+library(GEOquery)#R包加载
+library(tidyr)
+d <- read.csv("EPC_case_control_diff_genes.csv",row.names = 1)
+diff_entrez<-bitr(rownames(d),fromType = 'SYMBOL',toType = 'ENTREZID',OrgDb = 'org.Hs.eg.db')
+head(diff_entrez)
+#KEGG enrich
+KEGG_enrich <- clusterProfiler::enrichKEGG(gene = diff_entrez$ENTREZID,
+                                           organism = "hsa", #物种Homo sapiens 
+                                           pvalueCutoff = 0.05,#pvalue阈值
+                                           qvalueCutoff = 0.05,#qvalue阈值
+                                           pAdjustMethod = "BH",#p值矫正方法，one of "holm", 
+                                           #"hochberg", "hommel", 
+                                           #"bonferroni", "BH", 
+                                           #"BY", "fdr", "none"
+                                           minGSSize = 10,#富集分析中考虑的最小基因集合大小
+                                           maxGSSize = 500)#富集中考虑的最大基因集合大小
+#将RNTREZ转换为Symbol
+KEGG_enrich<-setReadable(KEGG_enrich,
+                         OrgDb = org.Hs.eg.db,
+                         keyType = 'ENTREZID')
+#提取KEGG富集结果表格                 
+KEGG_result<-KEGG_enrich@result
+KEGG_result
+KEGG_result <- KEGG_result[which(KEGG_result$pvalue<0.05&KEGG_result$qvalue<0.05),]
+write.csv(KEGG_result,"KEGG_result.csv")
+#GO enrich
+go_enrich<-clusterProfiler::enrichGO(gene = diff_entrez$ENTREZID,
+                                     ont = 'all',#可选'BP','CC','MF' or 'all'
+                                     keyType = "ENTREZID",
+                                     OrgDb = org.Hs.eg.db,
+                                     pAdjustMethod = "BH",#p值矫正方法
+                                     pvalueCutoff = 0.05,
+                                     qvalueCutoff = 0.05)
+#将RNTREZ转换为Symbol
+go_enrich<-DOSE::setReadable(go_enrich,
+                             OrgDb = org.Hs.eg.db,
+                             keyType = 'ENTREZID')
+#去除冗余的GO term
+go_geo<- simplify(go_enrich, cutoff=0.7, by="p.adjust",
+                  select_fun=min)
+#提取GO富集结果表格 
+go_result<-go_geo@result
+go_result
+write.csv(go_result,"G0_result.csv")
+###enrich结果绘图###
