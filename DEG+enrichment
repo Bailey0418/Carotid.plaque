@@ -1,0 +1,12 @@
+###DEGs（limma）###
+#查看数据一致性
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment")
+exp <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/preprocessing/exp_symbol_avg.csv",row.names = 1)
+pdf(file = "01.pdf", width = 6, height = 6)
+boxplot(data.frame(exp))
+dev.off()
+#一致性不好的话要处理一下
+library(affy)
+normalized_exp <- rma(exp)
+write.csv(exp,file="/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/preprocessing/exp_norm.csv")
+
