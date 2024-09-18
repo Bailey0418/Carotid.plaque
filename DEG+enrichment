@@ -129,3 +129,37 @@ go_result<-go_geo@result
 go_result
 write.csv(go_result,"G0_result.csv")
 ###enrich结果绘图###
+#GO结果作图
+library(forcats)
+library(ggplot2)
+ggplot(go_result,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将term顺序按照GeneRatio进行排序
+  #分面
+  geom_point(aes(size=Count,fill=p.adjust),
+             shape=21,
+             color='black')+
+  facet_grid(ONTOLOGY~.,
+             scale='free_y',
+             space = 'free_y'
+  )+
+  #修改气泡图颜色
+  scale_fill_gradient(low='#E27371',high = '#5D82A7')+
+  #标题修改
+  labs(title='GO Enrichment',
+       y='GO term',
+       x='GeneRatio')+
+  guides(fill=guide_colorbar(reverse = T,order=1))+
+  theme_bw()#主题
+#KEGG作图
+ggplot(KEGG_result,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将term顺序按照GeneRatio进行排序
+  #分面
+  geom_point(aes(size=Count,fill=p.adjust),
+             shape=21,
+             color='black')+
+  #修改气泡图颜色
+  scale_fill_gradient(low='#E27371',high = '#5D82A7')+
+  #标题修改
+  labs(title='KEGG Enrichment',
+       y='KEGG term',
+       x='GeneRatio')+
+  guides(fill=guide_colorbar(reverse = T,order=1))+
+  theme_bw()#主题
