@@ -1,7 +1,8 @@
 ###逻辑回归Logistic Regression###
 #数据准备
 data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
-data <- data1[intersection,]
+intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/intersection_genes.csv",row.names = 1)
+data <- data1[intersection$x,]
 head(data)
 sample_names <- colnames(data)
 # 提取样本名的最后一位
@@ -39,6 +40,65 @@ predictions_prob <- predict(model, newdata = X_test, type = "response")
 predictions <- ifelse(predictions_prob > 0.5, 1, 0)
 # 查看预测结果
 head(predictions)
+
+# 提取回归系数和置信区间
+coef <- summary(model)$coefficients  
+conf_int <- confint(model)          
+exp_coef <- exp(coef[, 1])          
+lower_ci <- exp(conf_int[, 1])       
+upper_ci <- exp(conf_int[, 2])      
+p_values <- coef[, 4]  
+forest_data <- data.frame(
+  Variable = rownames(coef),   
+  Estimate = exp_coef,       
+  LowerCI = lower_ci,          
+  UpperCI = upper_ci,           
+  P.value = p_values           
+)
+print(forest_data)
+write.csv(forest_data,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/Logistic Regression/forest_data.csv")
+# 格式化 OR 和 p 值
+forest_data$OR <- format(round(forest_data$Estimate, 2), nsmall = 2)
+forest_data$P.value <- formatC(forest_data$P.value, format = "e", digits = 2)
+# 构建标签矩阵，包括变量、OR 值和 p 值
+labeltext <- cbind(
+  Variable = forest_data$Variable,
+  OR = forest_data$OR,           # OR 值
+  P.value = forest_data$P.value  # p 值
+)
+#绘制森林图
+library(forestplot)
+pdf(file = "forest.pdf", width = 12, height = 6)
+forestplot(
+  labeltext = labeltext,                   # 标签文字 (变量, OR, P值)
+  mean = forest_data$Estimate,             # 中心点（OR值）
+  lower = forest_data$LowerCI,             # 置信区间下限
+  upper = forest_data$UpperCI,             # 置信区间上限
+  zero = 1,                                # 参考线位置设为 1 （用于OR）
+  boxsize = 0.3,                           # 盒子的大小
+  lineheight = unit(8, 'mm'),              # 行高调整
+  colgap = unit(3, 'mm'),                  # 列间距
+  lwd.zero = 2,                            # 参考线的宽度
+  lwd.ci = 2.5,                            # 置信区间线的宽度
+  col = fpColors(
+    box = '#228B22',                       # 盒子颜色（绿色）
+    lines = 'black',                       # 线条颜色
+    zero = '#2E8B57'                       # 参考线颜色
+  ),
+  xlab = "Odds Ratio (OR)",                # X轴标签
+  lwd.xaxis = 1.5,                         # X轴线宽度
+  txt_gp = fpTxtGp(
+    ticks = gpar(cex = 0.9),               # 刻度文字大小
+    xlab = gpar(cex = 0.9),                # X轴标签大小
+    label = gpar(cex = 1)                  # 标签文字大小
+  ),
+  lty.ci = "solid",                        # 置信区间线类型
+  ci.vertices = TRUE,                      # 添加置信区间的端点
+  ci.vertices.height = 0.1,                # 置信区间端点高度
+  title = "Forest Plot of Odds Ratios",    # 图形标题
+  graph.pos = 2                            # 图形在标签的右侧
+)
+dev.off()
 
 #模型评估
 #1.混淆矩阵评估
