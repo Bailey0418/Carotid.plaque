@@ -1,2 +1,7 @@
 ###逻辑回归Logistic Regression###
+#数据准备
+data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
+data <- data1[intersection,]
+head(data)
+
 library(caTools)
