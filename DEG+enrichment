@@ -163,3 +163,35 @@ ggplot(KEGG_result,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将t
        x='GeneRatio')+
   guides(fill=guide_colorbar(reverse = T,order=1))+
   theme_bw()#主题
+###绘制venn图###
+cd /mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment
+library (VennDiagram)
+set1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs_filtered.csv")
+set2 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/signature_gene_set.csv")
+set1 <- set1$X
+set2 <- set2$Gene
+intersection <- intersect(set1, set2)
+print(intersection)
+write.csv(intersection, file = "/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/intersection_genes.csv")
+#二元#
+venn.diagram(x=list(set1,set2), 
+             scaled = F, # 根据比例显示大小
+             alpha= 0.5, #透明度 
+             lwd=1,lty=1,col=c('#FFFFCC','#CCFFFF'), #圆圈线条粗细、形状、颜色；1 实线, 2 虚线, blank无线条 
+             label.col ='black' , # 数字颜色abel.col=c('#FFFFCC','#CCFFFF',......)根据不同颜色显示数值颜色 
+             cex = 2, # 数字大小 
+             fontface = "bold",  # 字体粗细；加粗bold 
+             fill=c('#FFFFCC','#CCFFFF'), # 填充色 配色https://www.58pic.com/ 
+             category.names = c("Set1", "Set2") , #标签名 
+             cat.dist = 0.02, # 标签距离圆圈的远近 
+             cat.pos = -180, # 标签相对于圆圈的角度cat.pos = c(-10, 10, 135) 
+             cat.cex = 2, #标签字体大小 
+             cat.fontface = "bold",  # 标签字体加粗
+             cat.col='black' ,   #cat.col=c('#FFFFCC','#CCFFFF',.....)根据相应颜色改变标签颜色
+             cat.default.pos = "outer",  # 标签位置, outer内;text 外 
+             output=TRUE, 
+             filename='/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/venn.png',# 文件保存 
+             imagetype="png",  # 类型（tiff png svg）
+             resolution = 400,  # 分辨率 
+             compression = "lzw"# 压缩算法
+             )
