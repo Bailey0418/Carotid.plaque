@@ -30,6 +30,7 @@ head(X_train)
 head(y_train)
 # 使用训练集训练逻辑回归模型
 model <- glm(y_train ~ ., data = train_data[, -ncol(train_data)], family = "binomial")
+saveRDS(model, file = "logistic_model.rds")
 # 查看模型摘要
 summary(model)
 # 使用训练好的模型进行预测
@@ -38,10 +39,24 @@ predictions_prob <- predict(model, newdata = X_test, type = "response")
 predictions <- ifelse(predictions_prob > 0.5, 1, 0)
 # 查看预测结果
 head(predictions)
+
 #模型评估
 #1.混淆矩阵评估
 library(caret)
-confusionMatrix(as.factor(predictions), as.factor(y_test))
+conf_matrix <- confusionMatrix(factor(predictions), factor(y_test))
+# 假设 y_test 是实际的标签，predictions 是模型预测的类别
+# 计算混淆矩阵
+conf_matrix <- confusionMatrix(factor(predictions), factor(y_test))
+print(conf_matrix)
+conf_matrix_df <- as.data.frame(conf_matrix$table)
+write.csv(conf_matrix_df, file = "confusion_matrix.csv", row.names = FALSE)
+# 打印混淆矩阵的统计指标，例如Accuracy、Sensitivity、Specificity等
+stats_df <- as.data.frame(t(conf_matrix$overall))
+write.csv(stats_df, file = "confusion_matrix_stats.csv", row.names = FALSE)
+# 可选：也可以保存分类统计，例如敏感性和特异性
+class_stats_df <- as.data.frame(t(conf_matrix$byClass))
+write.csv(class_stats_df, file = "class_stats.csv", row.names = FALSE)
+
 #2.生成ROC曲线并计算AUC值
 library(pROC)
 roc_curve <- roc(y_test, predictions_prob)
