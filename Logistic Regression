@@ -3,5 +3,63 @@
 data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
 data <- data1[intersection,]
 head(data)
+sample_names <- colnames(data)
+# 提取样本名的最后一位
+last_digits <- as.numeric(substr(sample_names, nchar(sample_names), nchar(sample_names)))
+# 判断奇偶数，奇数为 normal (0)，偶数为 case (1)
+labels <- ifelse(last_digits %% 2 == 0, 1, 0)  # 偶数为 case (1), 奇数为 normal (0)
+data_t <- t(data)
+# 转换为数据框并添加标签列
+data_t <- as.data.frame(data_t)
+data_t$label <- labels
+head(data_t)
 
 library(caTools)
+set.seed(123)
+# 拆分数据集，80% 用于训练，20% 用于测试
+split <- sample.split(data_t$label, SplitRatio = 0.8)
+train_data <- subset(data_t, split == TRUE)
+test_data <- subset(data_t, split == FALSE)
+# 分离训练集和测试集中的特征（X）和标签（y）
+# 分离训练集和测试集中的特征（X）和标签（y）
+X_train <- train_data[, -ncol(train_data)]  # 移除最后一列标签列 (label)
+y_train <- train_data$label
+X_test <- test_data[, -ncol(test_data)]     # 同样移除标签列
+y_test <- test_data$label
+head(X_train)
+head(y_train)
+# 使用训练集训练逻辑回归模型
+model <- glm(y_train ~ ., data = train_data[, -ncol(train_data)], family = "binomial")
+# 查看模型摘要
+summary(model)
+# 使用训练好的模型进行预测
+predictions_prob <- predict(model, newdata = X_test, type = "response")
+# 将概率转化为二分类结果
+predictions <- ifelse(predictions_prob > 0.5, 1, 0)
+# 查看预测结果
+head(predictions)
+#模型评估
+#1.混淆矩阵评估
+library(caret)
+confusionMatrix(as.factor(predictions), as.factor(y_test))
+#2.生成ROC曲线并计算AUC值
+library(pROC)
+roc_curve <- roc(y_test, predictions_prob)
+pdf(file = "ROC.pdf", width = 6, height = 6)
+# 加载pROC包
+library(pROC)
+roc_curve <- roc(y_test, predictions_prob)
+auc_value <- auc(roc_curve)
+# 绘制ROC曲线
+pdf(file = "ROC.pdf", width = 6, height = 6)
+plot(roc_curve, col = "blue", lwd = 2, main = "ROC Curve with AUC")
+# 在图中标注AUC值
+text(0.6, 0.4, paste("AUC =", round(auc_value, 3)), col = "red", cex = 1.2)
+# 可选择增加轴标签等
+xlabel <- "False Positive Rate (1 - Specificity)"
+ylabel <- "True Positive Rate (Sensitivity)"
+title(main = "ROC Curve", sub = "Blue: ROC curve, Red: AUC")
+# 显示网格线
+grid()
+dev.off()
+
