@@ -86,8 +86,9 @@ library(DOSE)
 library(ggplot2)
 library(GEOquery)#R包加载
 library(tidyr)
-d <- read.csv("EPC_case_control_diff_genes.csv",row.names = 1)
-diff_entrez<-bitr(rownames(d),fromType = 'SYMBOL',toType = 'ENTREZID',OrgDb = 'org.Hs.eg.db')
+setwd("D:/acv/240903颈动脉斑块/result")
+DEG <- read.csv("DEGs_filtered_log2FC075.csv",row.names = 1)
+diff_entrez<-bitr(rownames(DEG),fromType = 'SYMBOL',toType = 'ENTREZID',OrgDb = 'org.Hs.eg.db')
 head(diff_entrez)
 #KEGG enrich
 KEGG_enrich <- clusterProfiler::enrichKEGG(gene = diff_entrez$ENTREZID,
