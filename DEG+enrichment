@@ -50,34 +50,19 @@ write.csv(DEG,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+en
 library(ggplot2)
 library(dplyr)
 library(ggrepel)
-DEG <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs_filtered.csv")
-# 添加表达状态的列
-DEG <- DEG %>%
-  mutate(regulation = case_when(
-    logFC >= 1 & adj.P.Val < 0.05 ~ "up",    
-    logFC <= -1 & adj.P.Val < 0.05 ~ "down", 
-    TRUE ~ "no_change"
-  ))
-pdf(file = "03.pdf", width = 6, height = 6)
-# 绘制火山图并添加基因名标签
-ggplot(DEG, aes(x = logFC, y = -log10(adj.P.Val), color = regulation)) +
-  geom_point(alpha = 0.8, size = 2) +
-  scale_color_manual(values = c("up" = "red", "down" = "blue", "no_change" = "gray")) +
-  theme_minimal() +
-  labs(title = "Volcano Plot", x = "log2 Fold Change", y = "-log10 Adjusted P-Value") +
-  theme(legend.title = element_blank()) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black") +
-  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "black") +
-  
-  # 添加基因名标签，仅对 up 和 down 的基因进行标注
-  geom_text_repel(
-    data = DEG %>% filter(abs(logFC) > 1 & adj.P.Val < 0.05),  # 仅标注显著的基因
-    aes(label = rownames(DEG)),  # 假设 DEG 中的基因名在行名中
-    size = 3,
-    box.padding = unit(0.35, "lines"),
-    point.padding = unit(0.3, "lines")
-  )
-dev.off()
+DEG <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs.csv",row.names = 1)
+library(EnhancedVolcano)
+DEG <- read.csv("DEGs.csv",row.names = 1)
+colnames(DEG)[1] <- "log2FoldChange"
+colnames(DEG)[5] <- "pvalue"
+EnhancedVolcano(DEG,                
+                lab = rownames(DEG),                
+                x = 'log2FoldChange',                
+                y = 'pvalue',
+                xlim = c(-4, 3),
+                ylim = c(0,6),
+                pCutoff = 0.05,  
+                FCcutoff = 0.75)
 ###GO+KEGG enrichment###
 library(clusterProfiler)
 library(org.Hs.eg.db)#将Symbol转换为基因符号Entrez ID
