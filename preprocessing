@@ -21,6 +21,7 @@ gset[[1]]
 exp<-exprs(gset[[1]])
 #读取临床信息矩阵
 cli<-pData(gset[[1]])
+write.csv(cli,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/preprocessing/cli.csv")
 #读取平台信息
 GPL<-fData(gset[[1]])
 #网络不好容易下载不全，可以手动下载输入annot文件
@@ -48,9 +49,20 @@ exp_symbol_avg <- exp_symbol %>%
   summarise(across(everything(), mean))  # 对每一列取平均值
 # 查看结果
 head(exp_symbol_avg)
-write.csv(exp_symbol_avg,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/preprocessing/exp_symbol_avg.csv")
+write.csv(exp_symbol_avg,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/preprocessing/exp_symbol_avg.csv",row.names = FALSE)
 #日期名转回基因名
 library(tidyverse)
 library(HGNChelper)
 human <- c("1-Dec","1-Mar","10-Mar","11-Mar","15-Sep","2-Mar","3-Mar","4-Mar","5-Mar","6-Mar","7-Mar","8-Mar","9-Mar")
 genelist <- checkGeneSymbols(human)
+
+###data2去掉不需要的样本###
+cli <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE100927/cli.csv",row.names = 1)
+filtered_rows <- cli[grep("Control carotid artery|Atherosclerotic carotid artery", cli$tissue), ]
+table(filtered_rows$tissue)
+row_names <- rownames(filtered_rows)
+print(row_names)
+data <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE100927/exp_symbol_avg.csv",row.names = 1)
+data1 <- data[,row_names]
+dim(data1)
+write.csv(data1,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE100927/exp_symbol_avg_sample.csv")
