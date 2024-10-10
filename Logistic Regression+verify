@@ -139,4 +139,22 @@ grid()
 dev.off()
 
 ###external verify###
-data <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE100927/exp_symbol.csv",row.names = 1)
+rm(list = ls())
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/verify/")
+#构建特征矩阵
+model <- readRDS("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/Logistic Regression/logistic_model.rds")
+summary(model)
+gene <- c("TPH1","MAOB","TDO2","KMO","KYNU","CYP1B1")
+data <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE100927/exp_symbol_avg_sample.csv",row.names = 1)
+X_test_external <- data[gene,]
+#构建真实标签
+cli <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE100927/cli.csv",row.names = 1)
+cli_data <- cli[grep("Control carotid artery|Atherosclerotic carotid artery", cli$tissue), ]
+table(cli_data$tissue)
+unique(cli_data$tissue)
+cli_data$label <- ifelse(cli_data$tissue == "Control carotid artery", 0,
+                         ifelse(cli_data$tissue == "Atherosclerotic carotid artery", 1, NA))
+head(cli_data[, c("tissue", "label")])
+y_test_external <- cli_data$label
+head(X_test_external)  # 查看外部特征矩阵
+head(y_test_external)  # 查看外部真实标签
