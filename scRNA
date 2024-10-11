@@ -1,1 +1,88 @@
 ###读取数据###
+library(Seurat)
+dir="/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE159677/outs/filtered_feature_bc_matrix/GSM4837528_01/"
+list.files(dir)
+counts <- Read10X(data.dir = dir)
+class(counts)
+scRNA28 <- CreateSeuratObject(counts = counts)
+scRNA28
+
+CA <- merge(scRNA23,y = c(scRNA24,scRNA25,scRNA26,scRNA27,scRNA28),
+                 add.cell.ids = c("scRNA23","scRNA24","scRNA25","scRNA26","scRNA27","scRNA28"),
+                 project = "CA",merge.data = TRUE)
+CA$sample <- sapply(X = strsplit(colnames(CA), split = "_"), FUN = "[", 1)
+dim(CA)
+table(CA@meta.data$sample)
+saveRDS(CA,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE159677/CA.rds")
+
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/seurat/")
+CA[["percent.mt"]] <- PercentageFeatureSet(CA, pattern = "^MT-")
+CA$log10GenesPerUMI <- log10(CA$nFeature_RNA)/log10(CA$nCount_RNA)
+CA <- subset(CA,subset = nFeature_RNA > 200&nFeature_RNA < 6000&percent.mt < 10&log10GenesPerUMI > 0.8)
+pdf("fig1.pdf",width = 10,heigh = 10)
+VlnPlot(CA, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3,group.by = "orig.ident")
+dev.off()
+
+pdf("fig2.pdf",width = 20,heigh = 10)
+plot1 <- FeatureScatter(CA, feature1 = "nCount_RNA", feature2 = "percent.mt",group.by = "orig.ident")
+plot2 <- FeatureScatter(CA, feature1 = "nCount_RNA", feature2 = "nFeature_RNA",group.by = "orig.ident")
+plot1 + plot2
+dev.off()
+
+CA <- NormalizeData(CA, normalization.method = "LogNormalize", scale.factor = 10000)
+CA <- FindVariableFeatures(CA, selection.method = "vst", nfeatures = 2000)
+top10 <- head(VariableFeatures(CA), 10)
+pdf("fig3.pdf",width = 20,heigh = 10)
+plot3 <- VariableFeaturePlot(CA)
+plot4 <- LabelPoints(plot = plot3, points = top10, repel = TRUE)
+plot3 + plot4
+dev.off()
+
+all.genes <- rownames(CA)
+CA <- ScaleData(CA, features = all.genes)
+CA <- RunPCA(CA, features = VariableFeatures(object = CA))
+pdf("fig4.pdf",width = 20,heigh = 10)
+VizDimLoadings(CA, dims = 1:2, reduction = "pca")
+dev.off()
+
+pdf("fig5.pdf",width = 10,heigh = 10)
+DimPlot(CA, reduction = "pca",group.by = "orig.ident")
+dev.off()
+pdf("fig6.pdf",width = 10,heigh = 10)
+ElbowPlot(CA)
+dev.off()
+
+CA <- FindNeighbors(CA, dims = 1:30)
+CA <- FindClusters(CA, resolution = 0.5)
+head(Idents(CA), 5)
+
+CA <- RunUMAP(CA, dims = 1:30)
+pdf("fig7.pdf",width = 10,heigh = 10)
+DimPlot(CA, reduction = "umap",label = TRUE, repel = TRUE)
+dev.off()
+   
+pdf("fig8.pdf",width = 10,heigh = 10)
+DimPlot(CA, reduction = "umap",group.by = "sample")
+dev.off()
+saveRDS(CA,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE159677/CA_filter.rds")
+
+library(harmony)
+CA <- RunHarmony(CA,reduction = "pca",group.by.vars = "sample",reduction.save = "harmony")
+CA <- RunUMAP(CA, reduction = "harmony", dims = 1:30,reduction.name = "umap")
+CA <- FindNeighbors(CA, reduction = "harmony", dims = 1:30)
+CA <- FindClusters(CA, resolution = 0.1)
+pdf("fig9.pdf",width = 20,heigh = 10)
+plot5 <- DimPlot(CA, reduction = "umap",group.by = "sample", label = F,repel = TRUE)
+plot6 <- DimPlot(CA, reduction = "umap", label = T,repel = TRUE)
+plot5 + plot6
+dev.off()
+saveRDS(CA,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE159677/CA_filter_batch.rds")
+
+CA_markers <- FindAllMarkers(CA, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+library(dplyr)
+top20 <- CA_markers %>% group_by(cluster) %>% top_n(n = 20, wt = avg_log2FC)
+pdf("fig10.pdf",width = 10,heigh = 10)
+DoHeatmap(CA, features = top20$gene) + NoLegend()
+dev.off()
+write.csv(CA_markers,"cluster_markers.csv")
+write.csv(top20,"top20_marker.csv")
