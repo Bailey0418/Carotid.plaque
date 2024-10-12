@@ -151,3 +151,15 @@ my36colors <-c('#E5D2DD', '#53A85F', '#F1BB72', '#F3B1A0', '#D6E7A3', '#57C3F3',
 pdf("fig13.pdf",width = 10,heigh = 10)
 StackedVlnPlot(CA, c('TPH1', 'MAOB', 'TDO2', 'KMO', 'KYNU','CYP1B1'), pt.size=0, cols=my36colors)
 dev.off()
+
+#CA与normal做每种细胞类型的差异
+CA@meta.data$source <- ifelse(as.numeric(substr(CA@meta.data$sample, nchar(CA@meta.data$sample), nchar(CA@meta.data$sample))) %% 2 == 1, "CA", "PA")
+CA$cell_type <- Idents(CA)
+saveRDS(CA,"CA.rds")
+scRNA <- subset(CA,cell_type == "Macrophage")#"T cell", "Endothelial cell","Smooth muscle cell", "Dendritic cell","Macrophage","Fibroblast","B cell","Natural killer cell","Granulocyte-monocyte progenitor"
+diff_genes <- FindMarkers(scRNA, ident.1 = "CA", ident.2 = "PA", group.by = "source")
+diff_genes1 <- subset(diff_genes, p_val_adj < 0.05&abs(avg_log2FC)>1)
+dim(diff_genes1)
+write.csv(diff_genes, "Macrophage_case_control_diff_genes.csv", row.names = T)
+write.csv(diff_genes1, "Macrophage_case_control_diff_genes_filter_q0.05.csv", row.names = T)
+###查看基因表达箱线图（在样本分组之间）###
