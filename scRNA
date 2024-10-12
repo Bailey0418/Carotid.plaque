@@ -156,10 +156,10 @@ dev.off()
 CA@meta.data$source <- ifelse(as.numeric(substr(CA@meta.data$sample, nchar(CA@meta.data$sample), nchar(CA@meta.data$sample))) %% 2 == 1, "CA", "PA")
 CA$cell_type <- Idents(CA)
 saveRDS(CA,"CA.rds")
-scRNA <- subset(CA,cell_type == "Macrophage")#"T cell", "Endothelial cell","Smooth muscle cell", "Dendritic cell","Macrophage","Fibroblast","B cell","Natural killer cell","Granulocyte-monocyte progenitor"
+scRNA <- subset(CA,cell_type == "Granulocyte-monocyte progenitor")#"T cell", "Endothelial cell","Smooth muscle cell", "Dendritic cell","Macrophage","Fibroblast","B cell","Natural killer cell","Granulocyte-monocyte progenitor"
 diff_genes <- FindMarkers(scRNA, ident.1 = "CA", ident.2 = "PA", group.by = "source")
 diff_genes1 <- subset(diff_genes, p_val_adj < 0.05&abs(avg_log2FC)>1)
 dim(diff_genes1)
-write.csv(diff_genes, "Macrophage_case_control_diff_genes.csv", row.names = T)
-write.csv(diff_genes1, "Macrophage_case_control_diff_genes_filter_q0.05.csv", row.names = T)
+write.csv(diff_genes, "Granulocyte-monocyte progenitor_case_control_diff_genes.csv", row.names = T)
+write.csv(diff_genes1, "Granulocyte-monocyte progenitor_case_control_diff_genes_filter_q0.05.csv", row.names = T)
 ###查看基因表达箱线图（在样本分组之间）###
