@@ -1,11 +1,8 @@
 ###preprocessing
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/")
 library(WGCNA)
-# 设置多线程并行处理，优化速度
-options(stringsAsFactors = FALSE)
-allowWGCNAThreads()
-type <- "unsigned"
+#数据预处理,确保表达谱与临床信息样本顺序的匹配
 expression_data <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
-# 确保样本的顺序匹配
 datExpr <- as.data.frame(t(expression_data))  # 转置以适应 WGCNA 的输入格式
 dim(datExpr)
 # 检查数据是否有明显缺失值
@@ -14,12 +11,21 @@ if (!gsg$allOK) {
   datExpr <- datExpr[gsg$goodSamples, gsg$goodGenes]  # 过滤掉低质量样本或基因
 }
 dim(gsg)
-# 如果有临床数据，读取并确保与表达矩阵中的样本顺序匹配
 # clinical_data 是与样本相关的临床特征矩阵
-datTraits <- clinical_data  # 你的临床信息
+sample_names <- colnames(expression_data)
+last_digit <- as.numeric(substring(sample_names, nchar(sample_names)))
+group <- ifelse(last_digit %% 2 == 1, "normal", "case")
+group_numeric <- ifelse(group == "normal", 0, 1)
+clinical_data <- data.frame(Sample = sample_names, Group = group_numeric)
+print(clinical_data)
+datTraits <- clinical_data 
+
+# 设置多线程并行处理，优化速度
+options(stringsAsFactors = FALSE)
+allowWGCNAThreads()
+type <- "unsigned"
 
 ### 选择软阈值功率（beta）
-
 powers <- c(1:10, seq(from = 12, to=30, by=2))
 sft <- pickSoftThreshold( datExpr , powerVector=powers,   networkType=type, verbose=3)
 # 画出软阈值图，帮助选择合适的beta值
@@ -49,36 +55,36 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers,
 dev.off()
 #查看系统推荐的阈值
 sft$powerEstimate
-softPower <- 22  # 例如选择 beta=6，依据上图的结果
+softPower <- 22  # 上一步的结果
 # 基于所选软阈值构建邻接矩阵，并转换为拓扑重叠矩阵
 adjacency <- adjacency(datExpr, power = softPower)
 TOM <- TOMsimilarity(adjacency)
 dissTOM <- 1 - TOM
 # 基因聚类，识别基因模块
 geneTree <- hclust(as.dist(dissTOM), method = "average")
-
 # 动态剪切树方法识别模块
 minModuleSize <- 30  # 最小模块大小
 dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM,
                              deepSplit = 2, pamRespectsDendro = FALSE,
                              minClusterSize = minModuleSize)
-
 # 将模块标签转换为颜色
 dynamicColors <- labels2colors(dynamicMods)
-
 # 画出基因树和模块颜色
+pdf("fig.17.pdf",, width = 10, height = 10)
 plotDendroAndColors(geneTree, dynamicColors, "Dynamic Tree Cut",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05)
-
+dev.off()
 # 计算模块特征基因与临床特征的相关性
 MEs <- moduleEigengenes(datExpr, colors = dynamicColors)$eigengenes
 MEs <- orderMEs(MEs)  # 根据特征基因值对模块排序
 moduleTraitCor <- cor(MEs, datTraits, use = "p")
+nSamples <- ncol(datExpr)
 moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
 
 # 绘制模块-临床特征相关性热图
 textMatrix <- paste(signif(moduleTraitCor, 2), "\n(", signif(moduleTraitPvalue, 1), ")", sep = "")
+pdf("fig.18.pdf",, width = 10, height = 10)
 labeledHeatmap(Matrix = moduleTraitCor,
                xLabels = names(datTraits),
                yLabels = names(MEs),
@@ -89,22 +95,22 @@ labeledHeatmap(Matrix = moduleTraitCor,
                setStdMargins = FALSE,
                cex.text = 0.5,
                zlim = c(-1,1))
-
+dev.off()
 # 找出与感兴趣的模块最相关的基因
-module <- "blue"  # 替换为感兴趣的模块颜色
+module <- "blue"  # 替换为感兴趣的模块颜色,颜色名前不用加“ME”
 moduleGenes <- names(datExpr)[which(dynamicColors == module)]
-
+write.csv(moduleGenes,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/moduleGenes.csv")
 # 计算基因的模块成员关系（MM）和基因与临床特征的相关性
 geneModuleMembership <- as.data.frame(cor(datExpr, MEs, use = "p"))
+write.csv(geneModuleMembership,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/geneModuleMembership.csv")
 geneTraitSignificance <- as.data.frame(cor(datExpr, datTraits$YourTrait, use = "p"))
-
+write.csv(geneTraitSignificance,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/geneTraitSignificance.csv")
 # 查看模块内基因的重要性
-topGenes <- head(moduleGenes[order(geneModuleMembership[module], decreasing = TRUE)], n = 10)
-print(topGenes)
+#topGenes <- head(moduleGenes[order(geneModuleMembership[module], decreasing = TRUE)], n = 10)
+#print(topGenes)
 
 # 网络可视化 (基于指定模块)
 plotEigengeneNetworks(MEs, "Eigengene adjacency heatmap", 
                       marDendro = c(0,4,2,2), marHeatmap = c(3,4,2,2))
-
 # 基因间网络可视化
 TOMplot(dissTOM, geneTree, dynamicColors, main = "TOM Heatmap")
