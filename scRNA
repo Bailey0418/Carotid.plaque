@@ -162,4 +162,20 @@ diff_genes1 <- subset(diff_genes, p_val_adj < 0.05&abs(avg_log2FC)>1)
 dim(diff_genes1)
 write.csv(diff_genes, "Granulocyte-monocyte progenitor_case_control_diff_genes.csv", row.names = T)
 write.csv(diff_genes1, "Granulocyte-monocyte progenitor_case_control_diff_genes_filter_q0.05.csv", row.names = T)
-###查看基因表达箱线图（在样本分组之间）###
+###查看基因差异表达热图（在样本分组之间）###
+gene <- c("TPH1","MAOB","TDO2","KMO","KYNU","CYP1B1")
+data_E <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/DEG/Endothelial cell_case_control_diff_genes.csv",row.names = 1)
+gene_E <- data_E[gene,]
+gene_E
+
+gene_T <- gene_T[,-(3:4)]
+colnames(gene_T) <- c("T_p","T_log2FC","T_p.adj")
+gene_T <- na.omit(gene_T)
+gene_T
+
+data_list <- list(gene_B, gene_D, gene_E, gene_F, gene_G, gene_M, gene_S)
+gene_data <- Reduce(function(x, y) merge(x, y, by = "row.names", all = TRUE), data_list)
+rownames(gene_data) <- gene_data$Row.names
+gene_data$Row.names <- NULL
+gene_data
+write.csv(gene_data,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/DEG/gene_data.csv")
