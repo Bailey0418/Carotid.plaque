@@ -1,4 +1,28 @@
 ###逻辑回归Logistic Regression###
+library (VennDiagram)
+sign_moduleGenes <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/sign_moduleGenes.csv")
+DEGs <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/DEG+enrichment/DEGs_filtered_log2FC075.csv")
+Immport <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/Immport_genelist.csv")
+venn.diagram(x=list(sign_moduleGenes$x,DEGs$X,Immport$Symbol),
+             scaled = F, # 根据比例显示大小
+             alpha= 0.5, #透明度
+             lwd=1,lty=1,col=c('#FFFFCC','#CCFFFF',"#FFCCCC"), #圆圈线条粗细、形状、颜色；1 实线, 2 虚线, blank无线条
+             label.col ='black' , 
+             cex = 2, # 数字大小
+             fontface = "bold",  # 字体粗细；加粗bold
+             fill=c('#FFFFCC','#CCFFFF',"#FFCCCC"), 
+             category.names = c("WGCNA", "DEGs","Immport") , #标签名
+             cat.dist = 0.02, # 标签距离圆圈的远近
+             cat.pos = -180, # 标签相对于圆圈的角度cat.pos = c(-10, 10, 135)
+             cat.cex = 2, #标签字体大小
+             cat.fontface = "bold",  # 标签字体加粗
+             cat.col='black' ,   #cat.col=c('#FFFFCC','#CCFFFF',.....)根据相应颜色改变标签颜色
+             cat.default.pos = "outer",  # 标签位置, outer内;text 外
+             output=TRUE,
+             filename="/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/fig21.png", 
+             imagetype="png",  # 类型（tiff png svg）                                        
+             resolution = 400,  # 分辨率                           
+             compression = "lzw")
 #数据准备
 data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
 intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/intersection_genes.csv",row.names = 1)
