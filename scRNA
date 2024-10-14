@@ -179,3 +179,24 @@ rownames(gene_data) <- gene_data$Row.names
 gene_data$Row.names <- NULL
 gene_data
 write.csv(gene_data,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/DEG/gene_data.csv")
+#绘制热图
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/DEG")
+data <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/DEG/gene_data_merge.csv",row.names = 1)
+library(pheatmap)
+library(ComplexHeatmap)
+fc_columns <- grep("log2FC", colnames(data))
+pvalue_columns <- grep("_p$", colnames(data))
+fc_data <- data[, fc_columns]
+pvalue_data <- data[, pvalue_columns]
+star_annotation <- apply(pvalue_data, 2, function(x) {
+  ifelse(x < 0.001, "***", ifelse(x < 0.01, "**", ifelse(x < 0.05, "*", "")))
+})
+pdf("fig14.pdf",width = 10,heigh = 10)
+pheatmap(fc_data, display_numbers = star_annotation, 
+         color = colorRampPalette(c("navy", "white", "firebrick3"))(50),
+         main = "FC Heatmap with P-value Stars",
+         na_col = "white", 
+         fontsize_number = 10,
+         cluster_rows = FALSE,
+         cluster_cols = FALSE)
+dev.off()
