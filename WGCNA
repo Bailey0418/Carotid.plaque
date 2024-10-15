@@ -84,6 +84,7 @@ plotDendroAndColors(net$dendrograms[[1]],
                     addGuide = TRUE, 
                     guideHang = 0.05)
 dev.off()
+MEs = net$MEs
 ###模块之间的相关性
 MEs_col = MEs
 library(tidyverse)
@@ -158,5 +159,5 @@ verboseScatterplot( MM, GS,
                     bg = module  )
 dev.off()
 #阈值筛选top基因
-sign_moduleGenes <- moduleGenes[(GS > 0.5 & MM > 0.8)]
+sign_moduleGenes <- significantGenes[(GS > 0.5 & MM > 0.8)]
 write.csv(sign_moduleGenes,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/sign_moduleGenes.csv")
