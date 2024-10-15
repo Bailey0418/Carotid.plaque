@@ -3,6 +3,9 @@ library (VennDiagram)
 sign_moduleGenes <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/sign_moduleGenes.csv")
 DEGs <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/DEG+enrichment/DEGs_filtered_log2FC075.csv")
 Immport <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/Immport_genelist.csv")
+a <- intersect(sign_moduleGenes$x,DEGs$X)
+b <- intersect(a,Immport$Symbol)
+write.csv(b,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/intersection_genes.csv")
 venn.diagram(x=list(sign_moduleGenes$x,DEGs$X,Immport$Symbol),
              scaled = F, # 根据比例显示大小
              alpha= 0.5, #透明度
@@ -25,7 +28,7 @@ venn.diagram(x=list(sign_moduleGenes$x,DEGs$X,Immport$Symbol),
              compression = "lzw")
 #数据准备
 data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
-intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/intersection_genes.csv",row.names = 1)
+intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/intersection_genes.csv",row.names = 1)
 data <- data1[intersection$x,]
 head(data)
 sample_names <- colnames(data)
