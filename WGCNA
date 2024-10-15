@@ -160,4 +160,5 @@ verboseScatterplot( MM, GS,
 dev.off()
 #阈值筛选top基因
 sign_moduleGenes <- significantGenes[(GS > 0.5 & MM > 0.8)]
+sign_moduleGenes <- sign_moduleGenes[!is.na(sign_moduleGenes)]
 write.csv(sign_moduleGenes,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/sign_moduleGenes.csv")
