@@ -1,0 +1,41 @@
+###读取数据
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/STRING/")
+interaction_data <- read.csv("string_interactions.csv")
+head(interaction_data)
+###构建网络
+library(igraph)
+ppi_network <- graph_from_data_frame(d = interaction_data[, c("X.node1", "node2")], directed = FALSE)
+print(ppi_network)
+
+# 计算度数中心性
+degree_centrality <- degree(ppi_network, mode = "all")
+# 将中心性指标添加到数据框
+hub_genes <- data.frame(gene = names(degree_centrality), degree = degree_centrality)
+# 按照度数中心性从大到小排序
+hub_genes_sorted <- hub_genes[order(-hub_genes$degree), ]
+# 查看前几个 hub 基因
+head(hub_genes_sorted)
+
+# 计算介数中心性
+betweenness_centrality <- betweenness(ppi_network, directed = FALSE)
+# 将介数中心性添加到数据框
+hub_genes$betweenness <- betweenness_centrality
+# 按照介数中心性从大到小排序
+hub_genes_sorted_betweenness <- hub_genes[order(-hub_genes$betweenness), ]
+# 查看前几个介数中心性高的基因
+head(hub_genes_sorted_betweenness)
+
+# 计算紧密中心性
+closeness_centrality <- closeness(ppi_network, normalized = TRUE)
+# 将紧密中心性添加到数据框
+hub_genes$closeness <- closeness_centrality
+# 按照紧密中心性从大到小排序
+hub_genes_sorted_closeness <- hub_genes[order(-hub_genes$closeness), ]
+# 查看前几个紧密中心性高的基因
+head(hub_genes_sorted_closeness)
+write.csv(hub_genes_sorted_closeness,"hub_genes_sorted_closeness.csv")
+
+V(ppi_network)$size <- degree_centrality * 2
+pdf("fig.22.pdf",width = 10, height = 10)
+plot(ppi_network, vertex.label = NA, vertex.size = V(ppi_network)$size)
+dev.off()
