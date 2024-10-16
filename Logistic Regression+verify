@@ -1,5 +1,5 @@
 ###逻辑回归Logistic Regression###
-#汇总Immport基因集
+#汇总色氨酸特征基因集
 folder_path <- "D:/Project/240903颈动脉斑块/Immport"  # 替换为你的文件夹路径
 # 获取文件夹中所有的 .txt 文件名
 file_list <- list.files(path = folder_path, pattern = "*.txt", full.names = TRUE)
