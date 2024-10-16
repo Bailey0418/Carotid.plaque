@@ -16,21 +16,19 @@ head(Immport)
 write.csv(Immport,"D:/Project/240903颈动脉斑块/Immport/Immport_genelist.csv",row.names = F)
 
 library (VennDiagram)
-sign_moduleGenes <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/sign_moduleGenes.csv")
 DEGs <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/DEG+enrichment/DEGs_filtered_log2FC075.csv")
-Immport <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/Immport_genelist.csv")
-a <- intersect(sign_moduleGenes$x,DEGs$X)
-b <- intersect(a,Immport$Symbol)
-write.csv(b,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/intersection_genes.csv")
-venn.diagram(x=list(sign_moduleGenes$x,DEGs$X,Immport$Symbol),
+TR <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/intersect/signature_gene_set.csv")
+a <- intersect(TR$Gene,DEGs$X)
+write.csv(a,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/intersect/intersection_genes.csv")
+venn.diagram(x=list(TR$Gene,DEGs$X),
              scaled = F, # 根据比例显示大小
              alpha= 0.5, #透明度
-             lwd=1,lty=1,col=c('#FFFFCC','#CCFFFF',"#FFCCCC"), #圆圈线条粗细、形状、颜色；1 实线, 2 虚线, blank无线条
+             lwd=1,lty=1,col=c('#FFFFCC','#CCFFFF'), #圆圈线条粗细、形状、颜色；1 实线, 2 虚线, blank无线条
              label.col ='black' , 
              cex = 2, # 数字大小
              fontface = "bold",  # 字体粗细；加粗bold
-             fill=c('#FFFFCC','#CCFFFF',"#FFCCCC"), 
-             category.names = c("WGCNA", "DEGs","Immport") , #标签名
+             fill=c('#FFFFCC','#CCFFFF'), 
+             category.names = c("Tryptophan-related genes", "DEGs") , #标签名
              cat.dist = 0.02, # 标签距离圆圈的远近
              cat.pos = -180, # 标签相对于圆圈的角度cat.pos = c(-10, 10, 135)
              cat.cex = 2, #标签字体大小
@@ -38,13 +36,13 @@ venn.diagram(x=list(sign_moduleGenes$x,DEGs$X,Immport$Symbol),
              cat.col='black' ,   #cat.col=c('#FFFFCC','#CCFFFF',.....)根据相应颜色改变标签颜色
              cat.default.pos = "outer",  # 标签位置, outer内;text 外
              output=TRUE,
-             filename="/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/fig21.png", 
-             imagetype="png",  # 类型（tiff png svg）                                        
+             filename="/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/intersect/fig21.svg", 
+             imagetype="svg",  # 类型（tiff png svg）                                        
              resolution = 400,  # 分辨率                           
              compression = "lzw")
 #数据准备
 data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
-intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/Intersect/intersection_genes.csv",row.names = 1)
+intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/intersect/intersection_genes.csv",row.names = 1)
 data <- data1[intersection$x,]
 head(data)
 sample_names <- colnames(data)
@@ -73,16 +71,48 @@ y_test <- test_data$label
 head(X_train)
 head(y_train)
 # 使用训练集训练逻辑回归模型
-model <- glm(y_train ~ ., data = train_data[, -ncol(train_data)], family = "binomial")
+model <- glm(y_train ~ ., data = X_train, family = "binomial")
 saveRDS(model, file = "logistic_model.rds")
 # 查看模型摘要
 summary(model)
+#绘制Probability Distribution Plot
+library(ggplot2)
+data_plot <- X_train
+predicted_probabilities <- predict(model, newdata = data_plot, type = "response")
+data_plot$predicted_probabilities <- predicted_probabilities
+pdf("fig2.pdf", width = 10,height = 10)
+ggplot(data_plot, aes(x = predicted_probabilities)) +
+  geom_density(fill = "blue", alpha = 0.5) +  # 密度图
+  labs(title = "Probability Distribution of Predictions", 
+       x = "Predicted Probability", 
+       y = "Density") +
+  theme_minimal()
+dev.off()
+#绘制Coefficient Plot
+library(broom)
+model_summary <- tidy(model)
+print(model_summary)
+library(dotwhisker)
+pdf("fig1.pdf", width = 10,height = 10)
+dwplot(model) +
+  theme_minimal() +
+  labs(title = "Coefficient Plot", x = "Coefficient Estimate", y = "Predictor")
+dev.off()
 # 使用训练好的模型进行预测
 predictions_prob <- predict(model, newdata = X_test, type = "response")
 # 将概率转化为二分类结果
 predictions <- ifelse(predictions_prob > 0.5, 1, 0)
 # 查看预测结果
 head(predictions)
+X_test$predictions <- predictions
+pdf("fig3.pdf", width = 10,height = 10)
+ggplot(X_test, aes(x = predictions)) +
+  geom_density(fill = "blue", alpha = 0.5) +  # 密度图
+  labs(title = "Probability Distribution of Predictions", 
+       x = "Predicted Probability", 
+       y = "Density") +
+  theme_minimal()
+dev.off()
 
 # 提取回归系数和置信区间
 coef <- summary(model)$coefficients  
@@ -99,49 +129,9 @@ forest_data <- data.frame(
   P.value = p_values           
 )
 print(forest_data)
-write.csv(forest_data,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/Logistic Regression/forest_data.csv")
-# 格式化 OR 和 p 值
 forest_data$OR <- format(round(forest_data$Estimate, 2), nsmall = 2)
 forest_data$P.value <- formatC(forest_data$P.value, format = "e", digits = 2)
-# 构建标签矩阵，包括变量、OR 值和 p 值
-labeltext <- cbind(
-  Variable = forest_data$Variable,
-  OR = forest_data$OR,           # OR 值
-  P.value = forest_data$P.value  # p 值
-)
-#绘制森林图
-library(forestplot)
-pdf(file = "forest.pdf", width = 12, height = 6)
-forestplot(
-  labeltext = labeltext,                   # 标签文字 (变量, OR, P值)
-  mean = forest_data$Estimate,             # 中心点（OR值）
-  lower = forest_data$LowerCI,             # 置信区间下限
-  upper = forest_data$UpperCI,             # 置信区间上限
-  zero = 1,                                # 参考线位置设为 1 （用于OR）
-  boxsize = 0.3,                           # 盒子的大小
-  lineheight = unit(8, 'mm'),              # 行高调整
-  colgap = unit(3, 'mm'),                  # 列间距
-  lwd.zero = 2,                            # 参考线的宽度
-  lwd.ci = 2.5,                            # 置信区间线的宽度
-  col = fpColors(
-    box = '#228B22',                       # 盒子颜色（绿色）
-    lines = 'black',                       # 线条颜色
-    zero = '#2E8B57'                       # 参考线颜色
-  ),
-  xlab = "Odds Ratio (OR)",                # X轴标签
-  lwd.xaxis = 1.5,                         # X轴线宽度
-  txt_gp = fpTxtGp(
-    ticks = gpar(cex = 0.9),               # 刻度文字大小
-    xlab = gpar(cex = 0.9),                # X轴标签大小
-    label = gpar(cex = 1)                  # 标签文字大小
-  ),
-  lty.ci = "solid",                        # 置信区间线类型
-  ci.vertices = TRUE,                      # 添加置信区间的端点
-  ci.vertices.height = 0.1,                # 置信区间端点高度
-  title = "Forest Plot of Odds Ratios",    # 图形标题
-  graph.pos = 2                            # 图形在标签的右侧
-)
-dev.off()
+write.csv(forest_data,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/Logistic Regression/forest_data.csv")
 
 #模型评估
 #1.混淆矩阵评估
