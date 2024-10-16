@@ -118,7 +118,22 @@ write.csv(go_result,"G0_result.csv")
 #GO结果作图
 library(forcats)
 library(ggplot2)
-ggplot(go_result,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将term顺序按照GeneRatio进行排序
+#筛选top5的通路并替换其中两个为自己想展示的氨基酸相关BP
+go_result_with_rownames <- go_result %>% mutate(term = rownames(go_result))
+top_go_result <- go_result_with_rownames %>%
+  group_by(ONTOLOGY) %>%
+  slice_max(order_by = GeneRatio, n = 5, with_ties = FALSE) %>%
+  ungroup()
+# 将 tibble 转换为 data.frame
+top_go_result_df <- as.data.frame(top_go_result)
+rownames(top_go_result_df) <- top_go_result_df$term
+top_go_result_df$term <- NULL
+# 查找 BP 行的位置
+bp_rows <- which(top_go_result_df$ONTOLOGY == "BP")
+# 替换前两个 BP 行
+top_go_result_df[bp_rows[4:5], ] <- amino_acid_related
+print(top_go_result_df)
+ggplot(top_go_result_df,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将term顺序按照GeneRatio进行排序
   #分面
   geom_point(aes(size=Count,fill=p.adjust),
              shape=21,
@@ -136,7 +151,12 @@ ggplot(go_result,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将ter
   guides(fill=guide_colorbar(reverse = T,order=1))+
   theme_bw()#主题
 #KEGG作图
-ggplot(KEGG_result,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将term顺序按照GeneRatio进行排序
+top15_kegg <- KEGG_result %>%
+  arrange(p.adjust) %>%  # 按调整后的p值升序排列
+  slice(1:15)            # 选择前15个通路
+top15_kegg[15, ] <- KEGG_result[35,]
+print(top15_kegg)
+ggplottop15_kegg,aes(x=GeneRatio,y=fct_reorder(Description, GeneRatio)))+#将term顺序按照GeneRatio进行排序
   #分面
   geom_point(aes(size=Count,fill=p.adjust),
              shape=21,
