@@ -1,4 +1,20 @@
 ###逻辑回归Logistic Regression###
+#汇总Immport基因集
+folder_path <- "D:/Project/240903颈动脉斑块/Immport"  # 替换为你的文件夹路径
+# 获取文件夹中所有的 .txt 文件名
+file_list <- list.files(path = folder_path, pattern = "*.txt", full.names = TRUE)
+# 批量读取所有 .txt 文件，存储为一个列表
+file_data_list <- lapply(file_list, function(file) {
+  read.table(file, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+})
+# 如果想将所有数据框合并为一个大的数据框（假设它们具有相同的列结构）
+combined_data <- do.call(rbind, file_data_list)
+# 查看结果
+head(combined_data)
+Immport <- unique(combined_data)
+head(Immport)
+write.csv(Immport,"D:/Project/240903颈动脉斑块/Immport/Immport_genelist.csv",row.names = F)
+
 library (VennDiagram)
 sign_moduleGenes <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Immport/WGCNA/sign_moduleGenes.csv")
 DEGs <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/DEG+enrichment/DEGs_filtered_log2FC075.csv")
