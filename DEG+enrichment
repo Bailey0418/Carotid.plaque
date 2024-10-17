@@ -221,13 +221,15 @@ library(ggplot2)
 library(reshape2)
 long_data <- melt(data_t, id.vars = c("Sample", "label"))
 colnames(long_data) <- c("Sample", "Condition", "Gene", "Expression")
+long_data$Condition <- factor(long_data$Condition, labels = c("Normal", "Disease"))
 setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/DEG+enrichment/")
 pdf("TRDEGs_exp.pdf",width = 12,height = 6)
-ggplot(long_data, aes(x = Gene, y = Expression, fill = Condition)) +
+ggplot(long_data, aes(x = Condition, y = Expression, fill = Condition)) +
   geom_boxplot() +
-  theme_minimal() +
+  facet_wrap(~ Gene, scales = "free") +  # 每个基因一个单独的图
+  theme_minimal() +  # 设置为简约主题
   labs(title = "Gene Expression in Normal vs Disease Samples",
-       x = "Gene", y = "Expression Level") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_manual(values = c("0" = "lightblue", "1" = "lightcoral"))
+       x = "Condition", y = "Expression Level") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # 调整x轴标签角度
+  scale_fill_manual(values = c("Normal" = "lightblue", "Disease" = "lightcoral"))  # 自定义颜色
 dev.off()
