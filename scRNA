@@ -200,3 +200,18 @@ pheatmap(fc_data, display_numbers = star_annotation,
          cluster_rows = FALSE,
          cluster_cols = FALSE)
 dev.off()
+
+
+###细胞比例计算###
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/seurat/")
+CA <- readRDS("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/seurat/CA.rds")
+library(Seurat)
+library(dplyr)
+library(reshape2)
+library(plyr)
+library(ggplot2)
+pdf("fig.15.pdf",width = 10,height = 10)
+Singlecellratio_plotstat(CA, group_by = "sample",
+                         meta.include = c("sample","orig.ident"),
+                         color_by = 'cell_type')
+dev.off()
