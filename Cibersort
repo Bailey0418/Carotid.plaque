@@ -13,3 +13,42 @@ colnames(expr)[1] <- "GeneSymbol"
 head(expr)
 write.table(expr, file = "expr.txt", sep = "\t", row.names = F, col.names = TRUE, quote = FALSE)
 result1 <- CIBERSORT("LM22.txt", "expr.txt", perm = 1000, QN = T)
+
+###结果可视化-箱线图
+#样本分组信息
+expr <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv", row.names = 1)
+sample_names <- colnames(expr)
+generate_group <- function(sample_name) {
+  # 提取样本名的最后一位字符并转换为数值
+  last_digit <- as.numeric(substr(sample_name, nchar(sample_name), nchar(sample_name)))
+  # 根据最后一位是否为奇数或偶数进行分组
+  if (last_digit %% 2 == 1) {
+    return("normal")
+  } else {
+    return("case")
+  }
+}
+groups <- sapply(sample_names, generate_group)
+group_info <- data.frame(Sample = sample_names, Group = groups)
+print(group_info)
+write.table(group_info, file = "group_info.txt", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+library(tidyverse)
+a <- read.table("CIBERSORT-Results.txt",sep = "\t",row.names = 1,check.names = F,header = T)
+b <- read.table("group_info.txt",sep = "\t",row.names = 1,check.names = F,header = T)
+a <- a[,1:22]
+identical(rownames(a),rownames(b))#查看行名是否一致
+
+class(b$Group)
+a$group <- b$Group
+a <- a %>% rownames_to_column("sample")
+library(ggsci)
+library(tidyr)
+library(ggpubr)
+b <- gather(a,key=CIBERSORT,value = Proportion,-c(group,sample))
+pdf("cibersort.pdf",width = 15,height = 10)
+ggboxplot(b, x = "CIBERSORT", y = "Proportion",fill = "group", palette = "lancet")+
+          stat_compare_means(aes(group = group),method = "wilcox.test",label = "p.signif",
+          symnum.args=list(cutpoints = c(0, 0.001, 0.01, 0.05, 1), symbols = c("***", "**", "*", "ns")))+
+          theme(text = element_text(size=10),axis.text.x = element_text(angle=45, hjust=1))
+dev.off()
