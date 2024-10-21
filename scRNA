@@ -207,11 +207,24 @@ setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/seurat/"
 CA <- readRDS("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/scRNA/seurat/CA.rds")
 library(Seurat)
 library(dplyr)
-library(reshape2)
-library(plyr)
+meta_data <- CA@meta.data
+cell_type_counts <- meta_data %>%
+  group_by(sample, cell_type) %>%
+  summarise(count = n()) %>%
+  ungroup()
+group_totals <- cell_type_counts %>%
+  group_by(sample) %>%
+  summarise(total_cells = sum(count))
+cell_type_props <- cell_type_counts %>%
+  left_join(group_totals, by = "sample") %>%
+  mutate(proportion = count / total_cells)
+
 library(ggplot2)
-pdf("fig.15.pdf",width = 10,height = 10)
-Singlecellratio_plotstat(CA, group_by = "sample",
-                         meta.include = c("sample","orig.ident"),
-                         color_by = 'cell_type')
+pdf("cell_pro.pdf",width = 10,height = 10)
+ggplot(cell_type_props, aes(x = sample, y = proportion, fill = cell_type)) +
+  geom_bar(stat = "identity", position = "fill") + # "fill" 使得条形图堆积到100%
+  scale_y_continuous(labels = scales::percent_format()) + # 将 y 轴转换为百分比格式
+  labs(x = "Sample Group", y = "Proportion", fill = "Cell Type", title = "Cell Type Proportions by Sample Group") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 dev.off()
