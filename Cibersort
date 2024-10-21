@@ -66,6 +66,8 @@ library(tidyr)
 library(tibble)
 library(dplyr)
 cor_res <- correlate(genes_expr, a ,method = "spearman")
+cor_res <- as.data.frame(cor_res)
+cor_res <- cor_res[, -(23:25)]
 
 df_r <- cor_res$r %>%
         as.data.frame() %>%
@@ -79,9 +81,19 @@ df_cor <- df_r %>%
           left_join(df_p) %>%
           mutate(stars = cut(pvalue, breaks = c(-Inf, 0.05, 0.01, 0.00, Inf),right = F, labels = c("***", "**", "*", " ")))
 head(df_cor)
+df_filtered <- df_cor %>%
+  filter(!cell_type %in% c("Correlation", "P-value", "RMSE"))
 
 library(ggplot2)
-ggplot(df_cor, aes(cell_type, gene))+
-geom_tile(aes(fill = correlation))+
-geom_text(aes(label = stars), color = "black", size = 4)+
-scale_fill_gradient2(low = "")
+pdf("cibersort_cor.pdf",width = 15,height = 8)
+ggplot(df_filtered, aes(cell_type, gene))+
+       geom_tile(aes(fill = correlation))+
+       geom_text(aes(label = stars), color = "black", size = 4)+
+       scale_fill_gradient2(low = "lightblue", high  = "lightcoral",mid = "white",
+       limit = c(-1,1), name = paste0("*    p < 0.05","\n\n","**  p < 0.01","\n\n","*** p < 0.001","\n\n","Correlation"))+
+labs(x = NULL, y = NULL)+
+theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1,color = "black"),
+      axis.text.y = element_text(size  =8, color = "black"),
+      axis.ticks.y = element_blank(),
+      panel.background = element_blank())
+dev.off()
