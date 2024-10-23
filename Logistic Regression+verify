@@ -41,6 +41,7 @@ venn.diagram(x=list(TR$Gene,DEGs$X),
              resolution = 400,  # 分辨率                           
              compression = "lzw")
 #数据准备
+setwd("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/Logistic Regression/")
 data1 <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/data/GSE43292/preprocessing/exp_norm.csv",row.names = 1)
 intersection <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/bulk/Tryptophan/intersect/intersection_genes.csv",row.names = 1)
 data <- data1[intersection$x,]
@@ -151,12 +152,9 @@ class_stats_df <- as.data.frame(t(conf_matrix$byClass))
 write.csv(class_stats_df, file = "class_stats.csv", row.names = FALSE)
 
 #2.生成ROC曲线并计算AUC值
-library(pROC)
-roc_curve <- roc(y_test, predictions_prob)
-pdf(file = "ROC.pdf", width = 6, height = 6)
 # 加载pROC包
 library(pROC)
-roc_curve <- roc(y_test, predictions_prob)
+roc_curve <- roc(y_test, predictions_prob,ci=T, direction="<")
 auc_value <- auc(roc_curve)
 # 绘制ROC曲线
 pdf(file = "ROC.pdf", width = 6, height = 6)
@@ -170,3 +168,26 @@ title(main = "ROC Curve", sub = "Blue: ROC curve, Red: AUC")
 # 显示网格线
 grid()
 dev.off()
+
+###ROC可视化
+library(pROC)
+library(ggplot2)
+ciobj <- ci.se(roc_curve)
+
+data_ci<-ciobj[1:11,1:3]
+data_ci<-as.data.frame(data_ci)
+x=1-as.numeric(rownames(data_ci))
+data_ci<-data.frame(x,data_ci)
+
+pdf("ROC_pro.pdf",width = 10,height = 10)
+ggroc(roc_curve, legacy.axes=T, size=2) +
+ geom_segment(aes(x=0, y=0, xend=1, yend=1), colour='grey', linetype = 'dotdash') + 
+ geom_ribbon(data=data_ci, aes(x=x, ymin=X2.5., ymax=X97.5.), fill='#1E90FF', alpha=0.5) + 
+# geom_line(aes(x=1-roc_curve$specificities, y=roc_curve$sensitivities), size=2) +
+ labs(title=paste("AUC:", round(roc_curve$auc, 3), "(", round(roc_curve$ci, 3)[1], "-", round(roc_curve$ci, 3)[3], ")", sep=""), x="1-Specificity", y="Sensitivity") + 
+ theme_bw() + 
+ theme(text=element_text(size=15, family="sans"), plot.title=element_text(hjust=0.5, family="sans"), axis.title=element_text(size=20, family="sans"), title=element_text(size=25, family="sans"))
+dev.off()
+
+printOut = cbind(round(roc_curve$auc, 3), round(roc_curve$ci, 3)[1], round(roc_curve$ci, 3)[3])
+write.table(printOut, file=paste(args[5], ".auc.xls", sep =""), sep="\t", quote=F, row.names=F, col.names=F)
