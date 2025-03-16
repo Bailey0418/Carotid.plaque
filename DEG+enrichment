@@ -50,7 +50,6 @@ write.csv(DEG,"/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+en
 library(ggplot2)
 library(dplyr)
 library(ggrepel)
-DEG <- read.csv("/mnt/raid5/User/bailin/project/240909Carotid.plaque/result/DEG+enrichment/DEGs.csv",row.names = 1)
 library(EnhancedVolcano)
 DEG <- read.csv("DEGs.csv",row.names = 1)
 colnames(DEG)[1] <- "log2FoldChange"
