@@ -12,7 +12,7 @@ rownames(expr) <- NULL
 colnames(expr)[1] <- "GeneSymbol"
 head(expr)
 write.table(expr, file = "expr.txt", sep = "\t", row.names = F, col.names = TRUE, quote = FALSE)
-result1 <- CIBERSORT("LM22.txt", "expr.txt", perm = 1000, QN = T)
+result1 <- CIBERSORT("LM22.txt", "expr.txt", perm = 1000, QN = FALSE)
 
 ###结果可视化-箱线图
 #样本分组信息
